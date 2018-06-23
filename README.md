@@ -14,7 +14,7 @@ pip3 install virtualenv
 ```
 
 ### setup the virutalenv in the project's root directory
-This tells virtualenv to create a an environment in .env/python3 directory and -p flag specifies which version of python to use.
+This tells virtualenv to create a an environment in `.env/python3` directory and `-p` flag specifies which version of python to use.
 
 `virtualenv -p  $(readlink `which python3`) .env/python3`
 
