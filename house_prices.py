@@ -157,16 +157,10 @@ def train_model(
     # Add the loss metrics from this period to our list.
     training_rmse.append(training_root_mean_squared_error)
     validation_rmse.append(validation_root_mean_squared_error)
-  print("Model training finished.")
 
-  # Output a graph of loss metrics over periods.
-  plt.ylabel("RMSE")
-  plt.xlabel("Periods")
-  plt.title("Root Mean Squared Error vs. Periods")
-  plt.tight_layout()
-  plt.show(training_rmse, label="training")
-  plt.show(validation_rmse, label="validation")
-  plt.legend()
+  print("Model training finished.")
+    # Output a graph of loss metrics over periods.
+  vi.plot_rmse_side_by_side(training_rmse, validation_rmse)
 
   return linear_regressor
 
@@ -197,8 +191,25 @@ validation_targets = get_targets(raw_val_data)
 
 
 # visualizations should be almost same as we have randomized the data, if not then data partition is not uniform
-# vi.plot_coolwarm_side_by_side(train_input_features, train_targets, validation_input_features, validation_targets)
+vi.plot_coolwarm_side_by_side(train_input_features, train_targets, validation_input_features, validation_targets)
 
-train_model(0.0001, 500, 5, train_input_features, train_targets, validation_input_features, validation_targets)
+linear_regressor = train_model(0.00003, 500, 5, train_input_features, train_targets, validation_input_features, validation_targets)
+
+test_input_features = get_input_features(raw_test_data)
+test_targets = get_targets(raw_test_data)
+
+predict_test_input_fn = lambda: input_fn(
+                                         test_input_features,
+                                         test_targets["median_house_value"],
+                                         num_epochs=1,
+                                         shuffle=False)
+
+test_predictions = linear_regressor.predict(input_fn= predict_test_input_fn)
+test_predictions = np.array([item['predictions'][0] for item in test_predictions])
+
+root_mean_squared_error = math.sqrt(metrics.mean_squared_error(test_predictions, test_targets))
+print("Final RMSE (on test data): %0.2f" % root_mean_squared_error)
+
+
 
 
