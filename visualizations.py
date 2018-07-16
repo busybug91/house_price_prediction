@@ -25,3 +25,13 @@ def plot_coolwarm_side_by_side(features1, targets1, features2, targets2):
                 cmap="coolwarm",
                 c = targets2["median_house_value"] / targets2["median_house_value"].max())
     _ = plt.show()
+
+def plot_rmse_side_by_side(training_rmse, validation_rmse):
+  plt.ylabel("RMSE")
+  plt.xlabel("Periods")
+  plt.title("Root Mean Squared Error vs. Periods")
+  plt.tight_layout()
+  plt.plot(training_rmse, label = "training")
+  plt.plot(validation_rmse, label = "validation")
+  plt.legend()
+  plt.show()
