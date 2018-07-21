@@ -8,7 +8,6 @@ import visualizations as vi
 from matplotlib import pyplot as plt
 
 
-
 def split_train_data(dataframe):
 
     # shuffle data
@@ -170,6 +169,17 @@ def construct_feature_columns(input_features):
   return set([tf.feature_column.numeric_column(my_feature)
               for my_feature in input_features])
 
+def select_and_transform_features(source_df):
+      transformed = source_df.copy()
+      min = source_df["latitude"].min().astype(int)
+      max = source_df["latitude"].max().astype(int)
+      BINS = zip(range(min, max), range(min+1, max+1))
+      for bin in BINS:
+        transformed["latitude"] = source_df["latitude"].apply(
+          lambda latitude: 1.0 if (bin[0] <= latitude and latitude < bin[1]) else 0.0 
+        )
+      return transformed
+
 tf.logging.set_verbosity(tf.logging.ERROR)
 pd.options.display.max_rows = 10
 pd.options.display.float_format = '{:.1f}'.format
@@ -191,10 +201,15 @@ validation_targets = get_targets(raw_val_data)
 
 
 # visualizations should be almost same as we have randomized the data, if not then data partition is not uniform
-vi.plot_coolwarm_side_by_side(train_input_features, train_targets, validation_input_features, validation_targets)
+# vi.plot_coolwarm_side_by_side(train_input_features, train_targets, validation_input_features, validation_targets)
 
-linear_regressor = train_model(0.00003, 500, 5, train_input_features, train_targets, validation_input_features, validation_targets)
+# Tranform and clean the selected features
+transformed_train_input_features = select_and_transform_features(train_input_features)
+transformed_validation_input_features = select_and_transform_features(validation_input_features)
+# Note: We transformed only input features not targets
 
+linear_regressor = train_model(0.00003, 500, 50, transformed_train_input_features, train_targets, transformed_validation_input_features, validation_targets)
+# Note: if learning rate is small, we would get jagged lines in plot of RMSEs due to jumping in convergence
 test_input_features = get_input_features(raw_test_data)
 test_targets = get_targets(raw_test_data)
 
@@ -209,7 +224,4 @@ test_predictions = np.array([item['predictions'][0] for item in test_predictions
 
 root_mean_squared_error = math.sqrt(metrics.mean_squared_error(test_predictions, test_targets))
 print("Final RMSE (on test data): %0.2f" % root_mean_squared_error)
-
-
-
-
+# 
