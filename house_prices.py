@@ -1,4 +1,5 @@
 import math
+import pdb
 import numpy as np
 import pandas as pd
 import tensorflow as tf
@@ -20,18 +21,19 @@ def split_train_data(dataframe):
     test = dataframe.loc[train.shape[0] + val.shape[0]:, :]                         # 20% rows for testing
     return train, val, test
 
+ALL_FEATURES = [ "longitude",
+                  "latitude",
+                  "housing_median_age",
+                  "total_rooms",
+                  "total_bedrooms",
+                  "population",
+                  "households",
+                  "median_income" ]
+
 def get_input_features(dataframe):
 
     # select everything but the label / target (the value to be predicted)
-    selected_features = dataframe[
-                                    [ "longitude",
-                                      "latitude",
-                                      "housing_median_age",
-                                      "total_rooms",
-                                      "total_bedrooms",
-                                      "population",
-                                      "households",
-                                      "median_income" ]]
+    selected_features = dataframe[ ALL_FEATURES ]
 
     # synthesize new features
 
@@ -169,8 +171,8 @@ def construct_feature_columns(input_features):
   return set([tf.feature_column.numeric_column(my_feature)
               for my_feature in input_features])
 
-def select_and_transform_features(source_df):
-      transformed = source_df.copy()
+def select_and_transform_features(source_df, relevant_features):
+      transformed = source_df[ relevant_features ].copy()
       min = source_df["latitude"].min().astype(int)
       max = source_df["latitude"].max().astype(int)
       BINS = zip(range(min, max), range(min+1, max+1))
@@ -203,12 +205,24 @@ validation_targets = get_targets(raw_val_data)
 # visualizations should be almost same as we have randomized the data, if not then data partition is not uniform
 # vi.plot_coolwarm_side_by_side(train_input_features, train_targets, validation_input_features, validation_targets)
 
+
+# inspect which features are affecting the target so that we are using only those features
+
+correlation_df = train_input_features.copy()
+correlation_df["targets"] = train_targets["median_house_value"]
+print(correlation_df.corr())
+
+# a positive number means target is directly proportional to feature value and negative means inversely proportional. We pick one, strongly proportional and one inversely proportional
+
+relevant_features = ["median_income", "latitude"]
+
+print("Selected features for training: %s" % relevant_features)
 # Tranform and clean the selected features
-transformed_train_input_features = select_and_transform_features(train_input_features)
-transformed_validation_input_features = select_and_transform_features(validation_input_features)
+transformed_train_input_features = select_and_transform_features(train_input_features, relevant_features)
+transformed_validation_input_features = select_and_transform_features(validation_input_features, relevant_features)
 # Note: We transformed only input features not targets
 
-linear_regressor = train_model(0.00003, 500, 50, transformed_train_input_features, train_targets, transformed_validation_input_features, validation_targets)
+linear_regressor = train_model(0.01, 500, 50, transformed_train_input_features, train_targets, transformed_validation_input_features, validation_targets)
 # Note: if learning rate is small, we would get jagged lines in plot of RMSEs due to jumping in convergence
 test_input_features = get_input_features(raw_test_data)
 test_targets = get_targets(raw_test_data)
